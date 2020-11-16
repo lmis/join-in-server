@@ -85,14 +85,11 @@ io.on(Signals._CONNECTION, (socket: Socket) => {
         });
       }
     )
-    .on(
-      Signals.POSITION_UPDATE,
-      (payload: { target: string; position: [number, number] }) => {
-        logEvent(id, Signals.POSITION_UPDATE, payload);
-        socket.to(payload.target).emit(Signals.POSITION_UPDATE, {
-          userId: id,
-          position: payload.position
-        });
-      }
-    );
+    .on(Signals.POSITION_UPDATE, (payload: { position: [number, number] }) => {
+      logEvent(id, Signals.POSITION_UPDATE, payload);
+      socket.broadcast.emit(Signals.POSITION_UPDATE, {
+        userId: id,
+        position: payload.position
+      });
+    });
 });
