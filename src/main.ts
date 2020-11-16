@@ -17,6 +17,7 @@ enum Signals {
   HELLO_CLIENT = "hello-client",
   MAX_USERS_REACHED = "max-users-reached",
   USER_JOINED = "user-joined",
+  POSITION_UPDATE = "position-update",
   USER_LEFT = "user-left",
   ICE_CANDIDATE = "ice-candidate",
   CONNECTION_OFFER = "connection-offer",
@@ -81,6 +82,16 @@ io.on(Signals._CONNECTION, (socket: Socket) => {
         socket.to(payload.target).emit(Signals.CONNECTION_ANSWER, {
           userId: id,
           answer: payload.answer
+        });
+      }
+    )
+    .on(
+      Signals.POSITION_UPDATE,
+      (payload: { target: string; position: [number, number] }) => {
+        logEvent(id, Signals.POSITION_UPDATE, payload);
+        socket.to(payload.target).emit(Signals.POSITION_UPDATE, {
+          userId: id,
+          position: payload.position
         });
       }
     );
