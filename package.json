@@ -1,7 +1,7 @@
 {
   "name": "node-http-server",
   "version": "1.0.0",
-  "description": "Node.js example server starter project",
+  "description": "Node.js signaling server for webRTC chat app.",
   "main": "src/main.ts",
   "scripts": {
     "start": "ts-node src/main.ts",

@@ -1,2 +1,2 @@
 # join-in-server
-Created with CodeSandbox
+Signaling server for the join-in web client.
