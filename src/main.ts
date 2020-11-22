@@ -11,7 +11,7 @@ const server = express()
   .use(bodyParser.urlencoded({ extended: true }))
   .listen(port, () => console.log(`Listening on port ${port}`));
 
-enum Signals {
+enum Signal {
   _CONNECTION = "connection",
   _DISCONNECT = "disconnect",
   HELLO_CLIENT = "hello-client",
@@ -24,7 +24,7 @@ enum Signals {
   CONNECTION_ANSWER = "connection-answer"
 }
 
-const logEvent = (id: string, signal: Signals, payload?: any): void => {
+const logEvent = (id: string, signal: Signal, payload?: any): void => {
   console.log(
     `${id}: ${signal} ${payload ? `(${JSON.stringify(payload)})` : ""}`
   );
@@ -32,64 +32,81 @@ const logEvent = (id: string, signal: Signals, payload?: any): void => {
 
 const maxNumberUsers = 20;
 const io = (socketIO as any)(server) as Server;
-io.on(Signals._CONNECTION, (socket: Socket) => {
+io.on(Signal._CONNECTION, (socket: Socket) => {
   const { id } = socket;
   const socketIds = [...io.sockets.sockets.values()]
     .map((s) => s.id)
     .filter((i) => i !== id);
   const numberOfSockets = socketIds.length;
 
-  logEvent(id, Signals._CONNECTION, "#" + numberOfSockets);
+  logEvent(id, Signal._CONNECTION, "#" + numberOfSockets);
   if (numberOfSockets === maxNumberUsers) {
-    socket.emit(Signals.MAX_USERS_REACHED);
+    socket.emit(Signal.MAX_USERS_REACHED);
     socket.disconnect();
     return;
   }
 
-  socket.emit(Signals.HELLO_CLIENT, { id, userIds: socketIds });
-  socket.broadcast.emit(Signals.USER_JOINED, {
+  socket.emit(Signal.HELLO_CLIENT, { userIds: socketIds });
+  socket.broadcast.emit(Signal.USER_JOINED, {
     userId: id
   });
 
-  socket
-    .on(Signals._DISCONNECT, () => {
-      logEvent(id, Signals._DISCONNECT);
-      socket.broadcast.emit(Signals.USER_LEFT, {
-        userId: id
-      });
-    })
-    .on(
-      Signals.ICE_CANDIDATE,
-      (payload: { target: string; candidate: any }) => {
-        logEvent(id, Signals.ICE_CANDIDATE, payload);
-        io.to(payload.target).emit(Signals.ICE_CANDIDATE, {
-          userId: id,
-          candidate: payload.candidate
-        });
+  const receive = <T extends object | undefined>(
+    signal: Signal,
+    handler: (payload: T) => void,
+    silent: boolean = false
+  ) => {
+    socket.on(signal, (payload) => {
+      if (!silent) {
+        logEvent(id, signal, payload);
       }
-    )
-    .on(Signals.CONNECTION_OFFER, (payload: { target: string; offer: any }) => {
-      logEvent(id, Signals.CONNECTION_OFFER, payload);
-      socket.to(payload.target).emit(Signals.CONNECTION_OFFER, {
-        userId: id,
-        offer: payload.offer
-      });
-    })
-    .on(
-      Signals.CONNECTION_ANSWER,
-      (payload: { target: string; answer: any }) => {
-        logEvent(id, Signals.CONNECTION_ANSWER, payload);
-        socket.to(payload.target).emit(Signals.CONNECTION_ANSWER, {
-          userId: id,
-          answer: payload.answer
-        });
-      }
-    )
-    .on(Signals.POSITION_UPDATE, (payload: { position: [number, number] }) => {
-      logEvent(id, Signals.POSITION_UPDATE, payload);
-      socket.broadcast.emit(Signals.POSITION_UPDATE, {
-        userId: id,
-        position: payload.position
-      });
+      handler(payload);
     });
+  };
+
+  receive(Signal._DISCONNECT, () => {
+    socket.broadcast.emit(Signal.USER_LEFT, {
+      userId: id
+    });
+  });
+
+  receive<{ target: string; candidate: any }>(
+    Signal.ICE_CANDIDATE,
+    ({ target, candidate }) => {
+      io.to(target).emit(Signal.ICE_CANDIDATE, {
+        userId: id,
+        candidate
+      });
+    }
+  );
+
+  receive<{ target: string; offer: any }>(
+    Signal.CONNECTION_OFFER,
+    ({ target, offer }) => {
+      socket.to(target).emit(Signal.CONNECTION_OFFER, {
+        userId: id,
+        offer
+      });
+    }
+  );
+
+  receive<{ target: string; answer: any }>(
+    Signal.CONNECTION_ANSWER,
+    ({ target, answer }) => {
+      socket.to(target).emit(Signal.CONNECTION_ANSWER, {
+        userId: id,
+        answer
+      });
+    }
+  );
+
+  receive<{ position: [number, number] }>(
+    Signal.POSITION_UPDATE,
+    ({ position }) => {
+      socket.broadcast.emit(Signal.POSITION_UPDATE, {
+        userId: id,
+        position: position
+      });
+    }
+  );
 });
