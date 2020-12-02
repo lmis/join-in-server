@@ -100,12 +100,13 @@ io.on(Signal._CONNECTION, (socket: Socket) => {
     }
   );
 
-  receive<{ position: [number, number] }>(
+  receive<{ position: [number, number]; angle: number }>(
     Signal.POSITION_UPDATE,
-    ({ position }) => {
+    ({ position, angle }) => {
       socket.broadcast.emit(Signal.POSITION_UPDATE, {
         userId: id,
-        position: position
+        position,
+        angle
       });
     }
   );
