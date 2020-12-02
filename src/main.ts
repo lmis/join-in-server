@@ -17,7 +17,7 @@ enum Signal {
   HELLO_CLIENT = "hello-client",
   MAX_USERS_REACHED = "max-users-reached",
   USER_JOINED = "user-joined",
-  POSITION_UPDATE = "position-update",
+  MOVEMENT_UPDATE = "movement-update",
   USER_LEFT = "user-left",
   ICE_CANDIDATE = "ice-candidate",
   CONNECTION_OFFER = "connection-offer",
@@ -100,14 +100,12 @@ io.on(Signal._CONNECTION, (socket: Socket) => {
     }
   );
 
-  receive<{ position: [number, number]; angle: number }>(
-    Signal.POSITION_UPDATE,
-    ({ position, angle }) => {
-      socket.broadcast.emit(Signal.POSITION_UPDATE, {
-        userId: id,
-        position,
-        angle
-      });
-    }
-  );
+  receive<{
+    movement: { position: [number, number]; angle: number; speed: number };
+  }>(Signal.MOVEMENT_UPDATE, ({ movement }) => {
+    socket.broadcast.emit(Signal.MOVEMENT_UPDATE, {
+      userId: id,
+      movement
+    });
+  });
 });
