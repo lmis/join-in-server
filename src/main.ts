@@ -100,12 +100,15 @@ io.on(Signal._CONNECTION, (socket: Socket) => {
     }
   );
 
-  receive<{
-    movement: { position: [number, number]; angle: number; speed: number };
-  }>(Signal.MOVEMENT_UPDATE, ({ movement }) => {
-    socket.broadcast.emit(Signal.MOVEMENT_UPDATE, {
-      userId: id,
-      movement
-    });
-  });
+  receive<{ position: [number, number]; angle: number; speed: number }>(
+    Signal.MOVEMENT_UPDATE,
+    ({ position, angle, speed }) => {
+      socket.broadcast.emit(Signal.MOVEMENT_UPDATE, {
+        userId: id,
+        position,
+        angle,
+        speed
+      });
+    }
+  );
 });
