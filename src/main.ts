@@ -12,13 +12,18 @@ const server = express()
   .listen(port, () => console.log(`Listening on port ${port}`));
 
 enum Signal {
+  // Websockets
   _CONNECTION = "connection",
   _DISCONNECT = "disconnect",
+
+  // App specific things
   HELLO_CLIENT = "hello-client",
   MAX_USERS_REACHED = "max-users-reached",
   USER_JOINED = "user-joined",
-  MOVEMENT_UPDATE = "movement-update",
   USER_LEFT = "user-left",
+  STATE_UPDATE = "state-update",
+
+  // P2P
   ICE_CANDIDATE = "ice-candidate",
   CONNECTION_OFFER = "connection-offer",
   CONNECTION_ANSWER = "connection-answer"
@@ -100,14 +105,22 @@ io.on(Signal._CONNECTION, (socket: Socket) => {
     }
   );
 
-  receive<{ position: [number, number]; angle: number; speed: number }>(
-    Signal.MOVEMENT_UPDATE,
-    ({ position, angle, speed }) => {
-      socket.broadcast.emit(Signal.MOVEMENT_UPDATE, {
+  receive<{
+    position: [number, number];
+    angle: number;
+    speed: number;
+    videoEnabled: boolean;
+    audioEnabled: boolean;
+  }>(
+    Signal.STATE_UPDATE,
+    ({ position, angle, speed, videoEnabled, audioEnabled }) => {
+      socket.broadcast.emit(Signal.STATE_UPDATE, {
         userId: id,
         position,
         angle,
-        speed
+        speed,
+        videoEnabled,
+        audioEnabled
       });
     }
   );
